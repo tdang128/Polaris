@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="refresh" content="0; url=file:///D:/OneDrive/Claude/Code%20-%20Polaris/site/index.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Opening Claude Link...</title>
+  </head>
+  <body>
+    <h2>Opening Claude Link...</h2>
+    <p>You are being redirected to the Claude page.</p>
+    <p>
+      If the page does not open automatically,
+      <a href="file:///D:/OneDrive/Claude/Code%20-%20Polaris/site/index.html">click here</a>.
+    </p>
+  </body>
+</html>
