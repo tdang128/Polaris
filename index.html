@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0"/>
+<title>Polaris — Multi-Agent Operating Model</title>
+<meta name="description" content="Watch a task run through Polaris step by step: what the Master orchestrator does and what the Feeder specialists do, from request to verified output."/>
+<style>
+  :root{
+    --bg0:#04060d; --bg1:#070b16;
+    --line:#1a2747; --line2:#26375f;
+    --ink:#eaf1ff; --dim:#9fb2da; --faint:#5f6f9a;
+    --star:#f5d061; --star2:#fbbf24;      /* Master / north star */
+    --cy:#22d3ee; --vi:#a78bfa;           /* Feeders */
+    --good:#4ade80; --warn:#fbbf24;
+    --card:rgba(13,20,40,.66);
+    --ease:cubic-bezier(.22,1,.36,1);
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans",system-ui,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--font); color:var(--ink); min-height:100vh; overflow-x:hidden;
+    -webkit-text-size-adjust:100%; line-height:1.55;
+    background:
+      radial-gradient(1200px 760px at 12% -12%,#16224d 0,transparent 55%),
+      radial-gradient(1100px 700px at 108% 6%,#241a52 0,transparent 52%),
+      radial-gradient(900px 600px at 50% 120%,#0c1530 0,transparent 60%),
+      linear-gradient(180deg,var(--bg0),var(--bg1) 55%,var(--bg0));
+  }
+  body::before{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.5;
+    background-image:
+      radial-gradient(1.4px 1.4px at 18% 22%, rgba(255,255,255,.55), transparent),
+      radial-gradient(1.2px 1.2px at 73% 14%, rgba(255,255,255,.45), transparent),
+      radial-gradient(1.1px 1.1px at 42% 64%, rgba(255,255,255,.40), transparent),
+      radial-gradient(1.3px 1.3px at 88% 52%, rgba(255,255,255,.38), transparent),
+      radial-gradient(1px 1px at 30% 88%, rgba(255,255,255,.35), transparent),
+      radial-gradient(1px 1px at 62% 78%, rgba(255,255,255,.30), transparent);
+  }
+  main{position:relative; z-index:1; max-width:1000px; margin:0 auto; padding:0 clamp(14px,3vw,28px) 60px}
+
+  /* header */
+  header{
+    position:sticky; top:0; z-index:50; display:flex; align-items:center; gap:13px;
+    padding:12px clamp(14px,3vw,28px); border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(8,13,28,.92),rgba(6,10,22,.66));
+    backdrop-filter:blur(11px) saturate(150%); -webkit-backdrop-filter:blur(11px) saturate(150%);
+  }
+  .star{width:42px;height:42px;flex:0 0 auto;display:grid;place-items:center;filter:drop-shadow(0 0 12px rgba(245,208,97,.55))}
+  .star svg{width:100%;height:100%}
+  .star .ring{transform-origin:center; animation:spin 14s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  header h1{font-size:16px; margin:0; line-height:1.15; letter-spacing:.2px}
+  header h1 small{display:block; font-size:10.5px; color:var(--dim); font-weight:500; letter-spacing:.3px; margin-top:2px}
+
+  /* intro */
+  .intro{padding:30px 2px 6px}
+  .kicker{font-size:11px; letter-spacing:2.4px; text-transform:uppercase; color:var(--star); font-weight:700}
+  .intro h2{font-size:clamp(25px,4.2vw,40px); line-height:1.1; margin:12px 0 0; font-weight:800; letter-spacing:-.5px}
+  .intro h2 .g{background:linear-gradient(90deg,var(--star),#ffe7a0);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .intro p.lede{font-size:clamp(15px,1.7vw,17.5px); color:var(--dim); max-width:740px; margin:14px 0 0}
+  .tagrow{display:flex; flex-wrap:wrap; gap:8px; margin-top:18px}
+  .tag{font-size:11.5px; color:var(--dim); border:1px solid var(--line); background:rgba(16,26,56,.7); border-radius:999px; padding:5px 12px}
+  .tag b{color:var(--ink); font-weight:700}
+
+  /* section header */
+  section.block{margin-top:34px}
+  .h-row{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:14px}
+  .h-row h3{font-size:19px; margin:0; font-weight:750}
+  .h-row .num{font-family:var(--mono); font-size:12px; color:var(--star); border:1px solid var(--line2); border-radius:7px; padding:2px 8px}
+  .h-row .sub{font-size:13px; color:var(--faint); margin-left:auto}
+
+  /* scene */
+  .scene-wrap{border:1px solid var(--line); border-radius:16px; background:rgba(8,12,24,.55); padding:8px 8px 2px; overflow:hidden; box-shadow:0 20px 50px -28px rgba(0,0,0,.8)}
+  .scene{display:block; width:100%; height:auto}
+  .node{opacity:.4; transition:opacity .5s var(--ease), filter .5s var(--ease)}
+  .node.active{opacity:1}
+  .nMaster.active{filter:drop-shadow(0 0 13px rgba(245,208,97,.6))}
+  .nFeeder.active{filter:drop-shadow(0 0 11px rgba(124,150,255,.6))}
+  .nYou.active,.nDisk.active{filter:drop-shadow(0 0 10px rgba(159,198,255,.45))}
+  .tok{opacity:0; transition:opacity .35s}
+  .tok.show{opacity:1}
+  .scene-legend{display:flex; flex-wrap:wrap; gap:7px 14px; padding:9px 8px 5px; font-size:11px; color:var(--dim)}
+  .scene-legend span{display:inline-flex; align-items:center; gap:6px}
+  .scene-legend i{width:14px; height:3px; border-radius:2px; display:inline-block}
+
+  /* player */
+  .player{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:14px 0 12px; padding:9px 11px; border:1px solid var(--line); border-radius:13px; background:rgba(10,16,32,.6)}
+  .pbtn{width:38px; height:38px; border-radius:10px; border:1px solid var(--line2); background:rgba(10,16,36,.85); color:var(--ink); cursor:pointer; font-size:14px; display:grid; place-items:center; transition:.15s var(--ease)}
+  .pbtn:hover{background:#17244c; border-color:#37538f}
+  .pbtn.play{background:linear-gradient(180deg,var(--star),var(--star2)); color:#0a0f1f; border-color:transparent; font-size:16px; width:46px; height:46px}
+  .pstatus{font-size:13px; color:var(--dim); margin-left:7px; white-space:nowrap}
+  .pstatus #stepNum{color:var(--star); font-weight:800; font-family:var(--mono)}
+  .pstatus .sl{color:var(--faint)} .pstatus .nm{color:var(--ink); font-weight:700}
+  .speed{margin-left:auto; display:inline-flex; gap:3px; background:rgba(8,13,28,.7); border:1px solid var(--line); border-radius:9px; padding:3px}
+  .speed button{border:0; background:transparent; color:var(--dim); font-family:inherit; font-size:11.5px; font-weight:700; padding:5px 9px; border-radius:7px; cursor:pointer}
+  .speed button.on{background:#1b2a55; color:#fff}
+
+  /* progress dots */
+  .dots{display:flex; gap:7px; flex-wrap:wrap; margin-bottom:16px}
+  .dot{display:flex; align-items:center; gap:7px; cursor:pointer; border:1px solid var(--line); background:rgba(10,16,32,.55); border-radius:999px; padding:5px 11px 5px 7px; transition:.15s var(--ease)}
+  .dot:hover{border-color:var(--line2)}
+  .dot .dn{width:21px; height:21px; border-radius:50%; display:grid; place-items:center; font-family:var(--mono); font-size:10.5px; font-weight:800; background:rgba(255,255,255,.08); color:var(--faint)}
+  .dot .dl{font-size:11.5px; color:var(--faint)}
+  .dot.done .dn{background:rgba(74,222,128,.18); color:var(--good)}
+  .dot.active{border-color:var(--star2); background:linear-gradient(180deg,rgba(58,46,20,.5),rgba(20,16,8,.35))}
+  .dot.active .dn{background:linear-gradient(180deg,var(--star),var(--star2)); color:#0a0f1f}
+  .dot.active .dl{color:var(--ink); font-weight:700}
+  @media(max-width:560px){.dot .dl{display:none}}
+
+  /* active step card */
+  .acard{border:1px solid var(--star2); border-radius:15px; background:linear-gradient(180deg,rgba(20,24,44,.7),rgba(10,14,28,.7)); padding:16px 17px 17px; box-shadow:0 16px 40px -26px rgba(251,191,36,.45)}
+  .acard.flash{animation:cardin .42s var(--ease)}
+  @keyframes cardin{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+  .ac-head{display:flex; align-items:center; gap:11px; flex-wrap:wrap}
+  .ac-head .badge{font-family:var(--mono); font-weight:800; font-size:14px; color:#0a0f1f; width:30px; height:30px; border-radius:9px; display:grid; place-items:center; background:linear-gradient(180deg,var(--star),var(--star2)); flex:0 0 auto}
+  .ac-head .ac-name{font-size:17px; font-weight:750}
+  .ac-head .ac-tag{font-size:12px; color:var(--star)}
+  .dir{margin-left:auto; font-size:10.5px; font-weight:800; letter-spacing:.5px; padding:4px 10px; border-radius:999px; white-space:nowrap; animation:pulse 2.3s var(--ease) infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+  body.paused .dir, body.paused .star .ring{animation-play-state:paused}
+  .dir.dispatch{color:#1a1405; background:linear-gradient(90deg,var(--star),var(--star2))}
+  .dir.returnf{color:#06160d; background:linear-gradient(90deg,#62e293,var(--good))}
+  .dir.dialogue{color:#0a0f1f; background:linear-gradient(90deg,var(--cy),var(--vi))}
+  .ac-lead{font-size:14px; color:var(--dim); margin:11px 0 0}
+  .lanes{display:grid; grid-template-columns:1fr 1fr; gap:11px; margin-top:13px}
+  @media(max-width:680px){.lanes{grid-template-columns:1fr}}
+  .lane{border:1px solid var(--line); border-radius:11px; padding:11px 13px; background:rgba(10,16,32,.5)}
+  .lane.m{border-color:rgba(245,208,97,.32); background:linear-gradient(180deg,rgba(42,33,12,.34),rgba(13,10,6,.18))}
+  .lane.f{border-color:rgba(124,150,255,.3); background:linear-gradient(180deg,rgba(16,22,48,.42),rgba(14,12,34,.22))}
+  .lane.idle{border-style:dashed; background:transparent; opacity:.65}
+  .lane .lt{font-size:10px; letter-spacing:1.4px; text-transform:uppercase; font-weight:800; margin-bottom:6px}
+  .lane.m .lt{color:var(--star)} .lane.f .lt{color:#9fc6ff} .lane.idle .lt{color:var(--faint)}
+  .lane p{margin:0; font-size:13px; color:var(--dim)}
+  .lane.m p{color:#ecdcbb}
+  .rolelab{margin:11px 0 6px; font-size:10.5px; letter-spacing:.6px; text-transform:uppercase; color:#9fc6ff; font-weight:700}
+  .rolechips{display:flex; flex-wrap:wrap; gap:6px}
+  .chip{font-size:11px; color:var(--dim); border:1px solid var(--line2); border-radius:999px; padding:4px 9px; background:rgba(14,22,44,.7)}
+
+  .gates{display:flex; gap:7px; flex-wrap:wrap; align-items:center; margin-top:13px}
+  .gates .glab{font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--faint); font-weight:700; margin-right:2px}
+  .gch{font-family:var(--mono); font-weight:800; font-size:12px; width:30px; height:30px; border-radius:8px; display:grid; place-items:center; border:1px solid var(--line2); color:var(--faint); background:rgba(10,16,34,.6); animation:gatelit .55s var(--ease) both}
+  @keyframes gatelit{0%{opacity:.25; transform:scale(.7)} 60%{opacity:1; transform:scale(1.14)} 100%{opacity:1; transform:scale(1); color:#06160d; background:linear-gradient(180deg,#62e293,var(--good)); border-color:transparent}}
+  .gch.crit{animation-name:gatelitc}
+  @keyframes gatelitc{0%{opacity:.25; transform:scale(.7)} 60%{opacity:1; transform:scale(1.14)} 100%{opacity:1; transform:scale(1); color:#1a1405; background:linear-gradient(180deg,var(--star),var(--star2)); border-color:transparent}}
+
+  .pts{margin:13px 0 0; padding:0; list-style:none; display:grid; gap:8px}
+  .pts li{position:relative; padding-left:20px; font-size:13px; color:var(--ink)}
+  .pts li::before{content:""; position:absolute; left:3px; top:7px; width:7px; height:7px; border-radius:2px; transform:rotate(45deg); background:linear-gradient(135deg,var(--cy),var(--vi))}
+  .out{margin-top:13px; font-family:var(--mono); font-size:12px; color:var(--good); border:1px dashed rgba(74,222,128,.35); background:rgba(74,222,128,.06); border-radius:9px; padding:8px 11px}
+
+  footer{margin-top:42px; padding-top:20px; border-top:1px solid var(--line); color:var(--faint); font-size:12.5px; display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center}
+  footer .star-s{color:var(--star)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="star" aria-hidden="true">
+    <svg viewBox="0 0 48 48">
+      <g class="ring"><circle cx="24" cy="24" r="20" fill="none" stroke="rgba(245,208,97,.25)" stroke-width="1" stroke-dasharray="3 6"/></g>
+      <path d="M24 5 L27.5 19.5 L42 24 L27.5 28.5 L24 43 L20.5 28.5 L6 24 L20.5 19.5 Z" fill="url(#sg)" stroke="rgba(255,231,160,.7)" stroke-width=".6"/>
+      <defs><radialGradient id="sg" cx="50%" cy="42%" r="62%">
+        <stop offset="0%" stop-color="#fff6d8"/><stop offset="55%" stop-color="#f5d061"/><stop offset="100%" stop-color="#e0a92e"/>
+      </radialGradient></defs>
+    </svg>
+  </div>
+  <h1>POLARIS<small>Multi-Agent Operating Model</small></h1>
+</header>
+
+<main>
+
+  <div class="intro">
+    <div class="kicker">★ How it works</div>
+    <h2>One orchestrator. A fleet of <span class="g">stateless specialists.</span></h2>
+    <p class="lede">Polaris turns a single request into a verified, cited output. Press play and watch a task run the whole pipeline — what the <b>Master</b> does at each step, and what the <b>Feeder</b> specialists do.</p>
+    <div class="tagrow">
+      <span class="tag"><b>7</b> stages</span>
+      <span class="tag"><b>A–F</b> QA gates</span>
+      <span class="tag"><b>3</b> quality tiers</span>
+      <span class="tag">Parallel feeders <b>·</b> waves of 3–5</span>
+      <span class="tag">No fabrication <b>·</b> full coverage</span>
+    </div>
+  </div>
+
+  <section class="block">
+    <div class="h-row">
+      <span class="num">LIVE RUN</span>
+      <h3>Watch a task run, step by step</h3>
+      <span class="sub">press play — or step through it</span>
+    </div>
+
+    <div class="scene-wrap">
+      <svg class="scene" id="scene" viewBox="0 0 960 380" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" role="img" aria-label="Animated diagram of a task moving through Polaris.">
+        <defs>
+          <marker id="ah" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#26375f"/></marker>
+          <marker id="ahg" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f5d061"/></marker>
+        </defs>
+
+        <!-- connectors -->
+        <g fill="none" stroke="#1f2d4f" stroke-width="1.3">
+          <path id="pReq" d="M176,186 L366,186" marker-end="url(#ah)"/>
+          <path id="pD1" d="M556,168 C648,142 690,112 766,96" marker-end="url(#ah)"/>
+          <path id="pD2" d="M556,189 L766,189" marker-end="url(#ah)"/>
+          <path id="pD3" d="M556,210 C648,236 690,266 766,282" marker-end="url(#ah)"/>
+          <path id="pWr" d="M464,258 L464,298" marker-end="url(#ah)"/>
+          <path id="pDel" d="M384,250 C300,335 180,318 152,206" stroke="#7a5a1a" stroke-dasharray="5 5" marker-end="url(#ahg)"/>
+        </g>
+        <g fill="none" stroke="none">
+          <path id="pR1" d="M766,104 C690,118 648,150 558,176"/>
+          <path id="pR2" d="M766,196 L558,196"/>
+          <path id="pR3" d="M766,274 C690,260 648,228 558,202"/>
+        </g>
+
+        <!-- nodes -->
+        <g id="nYou" class="node nYou">
+          <rect x="56" y="150" width="120" height="72" rx="13" fill="#0a1022" stroke="#26375f"/>
+          <text x="116" y="183" text-anchor="middle" fill="#eaf1ff" font-size="15" font-weight="700" font-family="-apple-system,Segoe UI,Roboto,sans-serif">YOU</text>
+          <text x="116" y="201" text-anchor="middle" fill="#5f6f9a" font-size="10" font-family="-apple-system,Segoe UI,Roboto,sans-serif">request + goal</text>
+        </g>
+
+        <g id="nMaster" class="node nMaster">
+          <rect x="372" y="118" width="184" height="140" rx="16" fill="#15110a" stroke="#f5d061" stroke-opacity=".55" stroke-width="1.4"/>
+          <path d="M464 138 l3 9 9.5 3 -9.5 3 -3 9 -3 -9 -9.5 -3 9.5 -3 z" fill="#f5d061"/>
+          <text x="464" y="186" text-anchor="middle" fill="#ffe7a0" font-size="16" font-weight="800" font-family="-apple-system,Segoe UI,Roboto,sans-serif">MASTER</text>
+          <text x="464" y="205" text-anchor="middle" fill="#9fb2da" font-size="10" font-family="-apple-system,Segoe UI,Roboto,sans-serif">orchestrator · main session</text>
+          <text x="464" y="222" text-anchor="middle" fill="#5f6f9a" font-size="9.5" font-family="-apple-system,Segoe UI,Roboto,sans-serif">holds the Agent tool</text>
+          <text x="464" y="238" text-anchor="middle" fill="#5f6f9a" font-size="9.5" font-family="-apple-system,Segoe UI,Roboto,sans-serif">owns all file writes</text>
+        </g>
+
+        <g id="nF1" class="node nFeeder">
+          <rect x="772" y="66" width="168" height="58" rx="12" fill="#120f29" stroke="#7c96ff" stroke-opacity=".5"/>
+          <text x="856" y="90" text-anchor="middle" fill="#cfe6ff" font-size="12.5" font-weight="700" font-family="-apple-system,Segoe UI,Roboto,sans-serif">FEEDER</text>
+          <text x="856" y="107" text-anchor="middle" fill="#5f6f9a" font-size="9.5" font-family="-apple-system,Segoe UI,Roboto,sans-serif">Context · Research</text>
+        </g>
+        <g id="nF2" class="node nFeeder">
+          <rect x="772" y="160" width="168" height="58" rx="12" fill="#120f29" stroke="#7c96ff" stroke-opacity=".5"/>
+          <text x="856" y="184" text-anchor="middle" fill="#cfe6ff" font-size="12.5" font-weight="700" font-family="-apple-system,Segoe UI,Roboto,sans-serif">FEEDER</text>
+          <text x="856" y="201" text-anchor="middle" fill="#5f6f9a" font-size="9.5" font-family="-apple-system,Segoe UI,Roboto,sans-serif">Document batch</text>
+        </g>
+        <g id="nF3" class="node nFeeder">
+          <rect x="772" y="254" width="168" height="58" rx="12" fill="#120f29" stroke="#7c96ff" stroke-opacity=".5"/>
+          <text x="856" y="278" text-anchor="middle" fill="#cfe6ff" font-size="12.5" font-weight="700" font-family="-apple-system,Segoe UI,Roboto,sans-serif">FEEDER</text>
+          <text x="856" y="295" text-anchor="middle" fill="#5f6f9a" font-size="9.5" font-family="-apple-system,Segoe UI,Roboto,sans-serif">QA / Critic</text>
+        </g>
+        <text x="856" y="332" text-anchor="middle" fill="#5f6f9a" font-size="9.5" font-family="-apple-system,Segoe UI,Roboto,sans-serif">stateless · read + web only</text>
+
+        <!-- disk -->
+        <g id="nDisk" class="node nDisk">
+          <ellipse cx="464" cy="300" rx="52" ry="10" fill="#0a1022" stroke="#26375f"/>
+          <path d="M412,300 v30 a52 10 0 0 0 104 0 v-30" fill="#0a1022" stroke="#26375f"/>
+          <ellipse cx="464" cy="330" rx="52" ry="10" fill="none" stroke="#1a2747"/>
+          <text x="464" y="354" text-anchor="middle" fill="#5f6f9a" font-size="10" font-family="-apple-system,Segoe UI,Roboto,sans-serif">run folder · disk</text>
+        </g>
+
+        <!-- tokens -->
+        <g>
+          <circle id="tReq" class="tok" r="5" fill="#ffffff"><animateMotion dur="1.3s" repeatCount="indefinite"><mpath xlink:href="#pReq" href="#pReq"/></animateMotion></circle>
+          <circle id="tD1" class="tok" r="4.5" fill="#22d3ee"><animateMotion dur="1.4s" repeatCount="indefinite"><mpath xlink:href="#pD1" href="#pD1"/></animateMotion></circle>
+          <circle id="tD2" class="tok" r="4.5" fill="#22d3ee"><animateMotion dur="1.35s" repeatCount="indefinite"><mpath xlink:href="#pD2" href="#pD2"/></animateMotion></circle>
+          <circle id="tD3" class="tok" r="4.5" fill="#22d3ee"><animateMotion dur="1.45s" repeatCount="indefinite"><mpath xlink:href="#pD3" href="#pD3"/></animateMotion></circle>
+          <circle id="tR1" class="tok" r="4.5" fill="#4ade80"><animateMotion dur="1.4s" repeatCount="indefinite"><mpath xlink:href="#pR1" href="#pR1"/></animateMotion></circle>
+          <circle id="tR2" class="tok" r="4.5" fill="#4ade80"><animateMotion dur="1.35s" repeatCount="indefinite"><mpath xlink:href="#pR2" href="#pR2"/></animateMotion></circle>
+          <circle id="tR3" class="tok" r="4.5" fill="#4ade80"><animateMotion dur="1.45s" repeatCount="indefinite"><mpath xlink:href="#pR3" href="#pR3"/></animateMotion></circle>
+          <circle id="tWr" class="tok" r="4.5" fill="#fbbf24"><animateMotion dur="1.0s" repeatCount="indefinite"><mpath xlink:href="#pWr" href="#pWr"/></animateMotion></circle>
+          <circle id="tDel" class="tok" r="5.5" fill="#f5d061"><animateMotion dur="1.7s" repeatCount="indefinite"><mpath xlink:href="#pDel" href="#pDel"/></animateMotion></circle>
+        </g>
+      </svg>
+
+      <div class="scene-legend">
+        <span><i style="background:#ffffff"></i> request</span>
+        <span><i style="background:#22d3ee"></i> dispatch → Feeders</span>
+        <span><i style="background:#4ade80"></i> findings return</span>
+        <span><i style="background:#fbbf24"></i> write to disk</span>
+        <span><i style="background:#f5d061"></i> final output</span>
+      </div>
+    </div>
+
+    <!-- player -->
+    <div class="player">
+      <button class="pbtn" id="restart" title="Restart" aria-label="Restart">⟲</button>
+      <button class="pbtn" id="prev" title="Previous step" aria-label="Previous step">◀</button>
+      <button class="pbtn play" id="play" title="Play / Pause" aria-label="Play or pause">▶</button>
+      <button class="pbtn" id="next" title="Next step" aria-label="Next step">▶</button>
+      <div class="pstatus">Stage <span id="stepNum">1</span><span class="sl"> / 7</span> · <span class="nm" id="stepName">Intake</span></div>
+      <div class="speed" id="speed">
+        <button data-spd="0.6">0.6×</button>
+        <button data-spd="1" class="on">1×</button>
+        <button data-spd="1.8">1.8×</button>
+      </div>
+    </div>
+
+    <!-- progress dots -->
+    <div class="dots" id="dots"></div>
+
+    <!-- active step card -->
+    <div class="acard" id="acard"></div>
+  </section>
+
+  <footer>
+    <span class="star-s">★ Polaris</span>
+    <span>General-purpose multi-agent system · Claude Code edition</span>
+    <span>· No fabrication · Full coverage · Verified output</span>
+  </footer>
+
+</main>
+
+<script>
+/* ---------------- data ---------------- */
+const ROLES = ["Baseline Research","Current Events / Case Scan","Benchmark / Reference","Context Mapping","Document Batch","Cross-reference","Domain Specialist","Market / Practice","Legal / Regulatory","Commercial / Strategy","Data / Spreadsheet","Coding / Architecture","QA / Critic","Red-Team","Recovery","Client-Protective Drafting","Drafting / Style"];
+
+const STAGES = [
+  { n:"1", name:"Intake", tag:"Understand the real ask", dir:null,
+    master:"Reads your request and the primary input. Pins down the real goal, the output format & language, the task type, the risk level and the quality tier — and scans the source folder for related or umbrella documents (never analysing a document in isolation).",
+    feeder:null,
+    lead:"Master fixes the target before any work begins.",
+    points:[
+      "Determine the real goal, the output format, the language rule, the task type, the risk level and the time-sensitivity.",
+      "Scan the source folder for related / umbrella documents, prior reviews and schedules.",
+      "Look up a domain checklist when the document type has one, and carry it into dispatch.",
+      "Ask you only when the goal is genuinely ambiguous or the client position is unknown — it is never guessed."
+    ], out:"→ a clear target + scope" },
+
+  { n:"2", name:"Tier & Plan", tag:"Choose depth, design the agents", dir:null,
+    master:"Selects one of three quality tiers — Quick, Standard, or Enhanced / Client-Protective — and designs the agent structure and batch plan. Coverage invariant: every clause, question, sheet or module is assigned to at least one full-scan pass.",
+    feeder:null,
+    lead:"Master decides the depth and the team — without asking you how many agents to use.",
+    points:[
+      "Pick a tier: Quick (short, low-risk), Standard (a few sources), or Enhanced (review / high-stakes / client-facing).",
+      "Design the agent structure (Master-only, one specialist, or context-mapper + parallel batch feeders).",
+      "batch_plan.md maps every work unit to a batch / feeder, proving 100% coverage before dispatch."
+    ], out:"→ tier + agent structure + batch plan" },
+
+  { n:"3", name:"Plan on Disk", tag:"Write the plan down", dir:null,
+    master:"Creates a timestamped run folder — input/, internal/, final/ — and writes execution_plan.md. From here a minimum file set always exists, so nothing is lost mid-run.",
+    feeder:null,
+    lead:"The plan is written to disk before deep work starts.",
+    points:[
+      "Create polaris_runs/<timestamp>_<task>/ with input/, internal/ and final/.",
+      "Write execution_plan.md: goal, assumptions, tier, agent structure, batch plan, source policy and quality gates.",
+      "A minimum file set always exists — even a Quick run leaves an audit trail."
+    ], out:"→ run folder + execution_plan.md" },
+
+  { n:"4", name:"Dispatch", tag:"Send the work to Feeders", dir:"dispatch",
+    master:"Sends each Feeder a Dispatch Package: role, scope, objective, language rule, required checks and the output format (with a coverage list). Runs in waves of ~3–5 and checkpoints each batch to disk. Subagents can't spawn subagents — Master orchestrates end to end and owns every file write.",
+    feeder:"Stateless specialists read the real source themselves — Master passes file paths, never pasted text (the core anti-fabrication control) — and work only their assigned scope. Tools: Read · Grep · Glob · WebSearch · WebFetch.",
+    roles:true,
+    lead:"When useful, Master first runs baseline research, context mapping or benchmark analysis — then fans out the Feeders in parallel.",
+    points:[
+      "Feeders read the real source themselves; Master never paraphrases the content for them.",
+      "Each Dispatch Package carries role, scope, objective, language rule, required checks, output format + coverage list, and a completion status.",
+      "Dispatch runs in waves of ~3–5 Feeders; each batch is checkpointed to disk before the next wave.",
+      "Feeders are independent — they verify on the source, not on each other."
+    ], out:"→ internal/feeder_output_*.md (checkpointed)" },
+
+  { n:"5", name:"QA Gates A–F", tag:"Check every batch", dir:"returnf",
+    master:"Runs gates A–F on each returned batch — A Format · B Source content (re-checked against the real file) · C Research & current-context · D Depth · E Traceable location · F Coverage matrix (zero uncovered cells). A failed gate triggers a correction; a faulty result is never synthesised.",
+    feeder:"Return structured findings + a coverage list as a single final message — Feeders can't write files, only Master does. Enhanced runs add a mandatory QA / Critic (or Red-Team) Feeder pass.",
+    lead:"As each batch returns, Master verifies it before anything is merged.",
+    points:[
+      "A Format · B Source content · C Research & current-context · D Depth · E Traceable location · F Coverage matrix.",
+      "Gate B re-checks each finding against the actual file to block fabrication.",
+      "Gate F requires a coverage matrix with zero uncovered cells before synthesis.",
+      "Enhanced runs add a mandatory QA / Critic (or Red-Team) pass on top of A–F."
+    ], out:"→ coverage_matrix.md · qa_critic_output.md" },
+
+  { n:"6", name:"Resolve", tag:"Clarify · adjudicate · recover", dir:"dialogue",
+    master:"Clarifies by re-spawning the same Feeder with its previous output + one focused query (max 2 rounds per issue). Adjudicates conflicts on source authority; on timeout it splits only the remaining work — never restarts the task — and escalates to you when the basis is genuinely unclear.",
+    feeder:"Answer the focused query as a delta, or a Recovery Feeder completes just the missing slice — no full rewrite.",
+    lead:"Feeders are stateless, so every dialogue round is a fresh, fully-briefed spawn.",
+    points:[
+      "A dialogue round = a fresh spawn carrying the previous output + one question (max 2 rounds per issue).",
+      "Conflicts are adjudicated on source authority; a genuinely unresolved conflict is escalated to you.",
+      "On timeout, only the remaining work is split and re-run — the whole task is never restarted."
+    ], out:"→ discussion_log.md · conflict_details.md" },
+
+  { n:"7", name:"Deliver", tag:"Synthesise · verify · save", dir:null,
+    master:"Synthesises an answer to your actual goal, runs the final checklist, then saves every file and verifies the filesystem — claiming “saved” only after the files are confirmed on disk. Reviews report a double count (N parent issues / M sub-findings).",
+    feeder:null,
+    lead:"Master assembles the verified findings into the deliverable you asked for.",
+    points:[
+      "No substantive finding is dropped; reviews report a double count (N parent issues / M sub-findings).",
+      "Client-facing output adds priority tiers and an open-decision-points table.",
+      "Every file is written, then verified to exist on disk before it is reported as saved."
+    ], out:"→ final/main_output.md + run_summary.md" }
+];
+
+/* scene activation per step (node ids + token ids) */
+const NODE = {you:"nYou", master:"nMaster", f1:"nF1", f2:"nF2", f3:"nF3", disk:"nDisk"};
+const ALL_NODES = Object.values(NODE);
+const ALL_TOKS = ["tReq","tD1","tD2","tD3","tR1","tR2","tR3","tWr","tDel"];
+const SCENE = [
+  { nodes:["you","master"],            toks:["tReq"] },
+  { nodes:["master"],                  toks:[] },
+  { nodes:["master","disk"],           toks:["tWr"] },
+  { nodes:["master","f1","f2","f3"],   toks:["tD1","tD2","tD3"] },
+  { nodes:["master","f1","f2","f3"],   toks:["tR1","tR2","tR3"] },
+  { nodes:["master","f2"],             toks:["tD2","tR2"] },
+  { nodes:["master","disk","you"],     toks:["tWr","tDel"] }
+];
+
+/* ---------------- elements ---------------- */
+const scene   = document.getElementById('scene');
+const acard   = document.getElementById('acard');
+const dotsEl  = document.getElementById('dots');
+const stepNum = document.getElementById('stepNum');
+const stepName= document.getElementById('stepName');
+const playBtn = document.getElementById('play');
+const dirLabel = d => d==='dispatch' ? 'Dispatch ▶' : d==='returnf' ? '◀ Findings return' : d==='dialogue' ? '⇄ Dialogue / recovery' : '';
+
+/* progress dots */
+dotsEl.innerHTML = STAGES.map((s,i)=>`<div class="dot" data-i="${i}"><span class="dn">${s.n}</span><span class="dl">${s.name}</span></div>`).join('');
+dotsEl.querySelectorAll('.dot').forEach(d=> d.addEventListener('click',()=>{ goTo(+d.dataset.i); if(playing) schedule(); }));
+
+/* ---------------- render active step ---------------- */
+function renderActive(i){
+  const s = STAGES[i];
+  const dir = s.dir ? `<span class="dir ${s.dir}">${dirLabel(s.dir)}</span>` : '';
+  const feeder = (s.feeder===null)
+    ? `<div class="lane f idle"><div class="lt">◆ Feeders</div><p>Idle — Master is working.</p></div>`
+    : `<div class="lane f"><div class="lt">◆ Feeders</div><p>${s.feeder}</p>`+
+        (s.roles ? `<div class="rolelab">Feeder roles Master can assign</div><div class="rolechips">${ROLES.map(r=>`<span class="chip">${r}</span>`).join('')}</div>` : ``)+
+      `</div>`;
+  const gates = (i===4)
+    ? `<div class="gates"><span class="glab">Gates</span>`+
+      ["A","B","C","D","E","F"].map((g,k)=>`<span class="gch ${(g==='B'||g==='F')?'crit':''}" style="animation-delay:${(0.15+k*0.22).toFixed(2)}s">${g}</span>`).join('')+
+      `</div>` : ``;
+
+  acard.classList.remove('flash');
+  void acard.offsetWidth;            /* retrigger entrance animation */
+  acard.classList.add('flash');
+  acard.innerHTML =
+    `<div class="ac-head"><span class="badge">${s.n}</span><span class="ac-name">${s.name}</span><span class="ac-tag">${s.tag}</span>${dir}</div>`+
+    `<p class="ac-lead">${s.lead}</p>`+
+    `<div class="lanes"><div class="lane m"><div class="lt">★ Master</div><p>${s.master}</p></div>${feeder}</div>`+
+    gates+
+    `<ul class="pts">${s.points.map(p=>`<li>${p}</li>`).join('')}</ul>`+
+    `<div class="out">${s.out}</div>`;
+}
+
+/* ---------------- update scene ---------------- */
+function updateScene(i){
+  ALL_NODES.forEach(id=> document.getElementById(id).classList.remove('active'));
+  SCENE[i].nodes.forEach(k=> document.getElementById(NODE[k]).classList.add('active'));
+  ALL_TOKS.forEach(id=> document.getElementById(id).classList.remove('show'));
+  SCENE[i].toks.forEach(id=> document.getElementById(id).classList.add('show'));
+}
+
+/* ---------------- update dots + label ---------------- */
+function updateChrome(i){
+  dotsEl.querySelectorAll('.dot').forEach((d,k)=>{
+    d.classList.toggle('active', k===i);
+    d.classList.toggle('done', k<i);
+  });
+  stepNum.textContent = i+1;
+  stepName.textContent = STAGES[i].name;
+}
+
+/* ---------------- player ---------------- */
+let cur=0, playing=false, speed=1, timer=null;
+const STEP_MS = 4600;
+
+function goTo(i){ cur = (i+STAGES.length)%STAGES.length; renderActive(cur); updateScene(cur); updateChrome(cur); }
+function clearTimer(){ if(timer){ clearTimeout(timer); timer=null; } }
+function schedule(){ clearTimer(); if(playing){ timer=setTimeout(()=>{ goTo(cur+1); schedule(); }, STEP_MS/speed); } }
+function setIcon(){ playBtn.textContent = playing ? '⏸' : '▶'; }
+function play(){ playing=true; document.body.classList.remove('paused'); try{scene.unpauseAnimations();}catch(e){} setIcon(); schedule(); }
+function pause(){ playing=false; document.body.classList.add('paused'); try{scene.pauseAnimations();}catch(e){} clearTimer(); setIcon(); }
+
+playBtn.addEventListener('click',()=> playing ? pause() : play());
+document.getElementById('next').addEventListener('click',()=>{ goTo(cur+1); if(playing) schedule(); });
+document.getElementById('prev').addEventListener('click',()=>{ goTo(cur-1); if(playing) schedule(); });
+document.getElementById('restart').addEventListener('click',()=>{ goTo(0); if(playing) schedule(); });
+document.getElementById('speed').querySelectorAll('button').forEach(b=> b.addEventListener('click',()=>{
+  speed = parseFloat(b.dataset.spd);
+  document.getElementById('speed').querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
+  if(playing) schedule();
+}));
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){ goTo(cur+1); if(playing) schedule(); }
+  else if(e.key==='ArrowLeft'){ goTo(cur-1); if(playing) schedule(); }
+  else if(e.key===' '){ e.preventDefault(); playing?pause():play(); }
+});
+
+/* init — autoplay */
+goTo(0);
+play();
+</script>
+</body>
+</html>
