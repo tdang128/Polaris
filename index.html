@@ -1,20 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-<<<<<<< HEAD
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0"/>
 <title>Polaris — Multi-Agent Operating Model</title>
-<meta name="description" content="Watch a task run through Polaris step by step: what the Master orchestrator does and what the Feeder specialists do, from request to verified output."/>
+<meta name="description" content="Step inside the Polaris galaxy: a Master orchestrator at the core and a constellation of stateless Feeder specialists. Watch a task travel from request to verified output."/>
 <style>
   :root{
-    --bg0:#04060d; --bg1:#070b16;
-    --line:#1a2747; --line2:#26375f;
-    --ink:#eaf1ff; --dim:#9fb2da; --faint:#5f6f9a;
-    --star:#f5d061; --star2:#fbbf24;      /* Master / north star */
-    --cy:#22d3ee; --vi:#a78bfa;           /* Feeders */
-    --good:#4ade80; --warn:#fbbf24;
-    --card:rgba(13,20,40,.66);
+    --bg0:#04050e; --bg1:#070819;
+    --ink:#eef2ff; --dim:#aab6e0; --faint:#6b76a8;
+    --gold:#f5d061; --gold2:#ffd98a;     /* Master / north star */
+    --cy:#38bdf8; --vi:#a78bfa;          /* Feeders */
+    --good:#5ee08a;
+    --line:#1d2748; --line2:#2c3a66;
+    --glass:rgba(13,17,38,.62);
     --ease:cubic-bezier(.22,1,.36,1);
     --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans",system-ui,sans-serif;
     --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
@@ -22,138 +21,119 @@
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{
-    font-family:var(--font); color:var(--ink); min-height:100vh; overflow-x:hidden;
-    -webkit-text-size-adjust:100%; line-height:1.55;
+    font-family:var(--font); color:var(--ink); min-height:100vh; overflow-x:hidden; line-height:1.55;
+    -webkit-text-size-adjust:100%;
     background:
-      radial-gradient(1200px 760px at 12% -12%,#16224d 0,transparent 55%),
-      radial-gradient(1100px 700px at 108% 6%,#241a52 0,transparent 52%),
-      radial-gradient(900px 600px at 50% 120%,#0c1530 0,transparent 60%),
+      radial-gradient(1200px 800px at 12% -10%,#1a1c4d 0,transparent 55%),
+      radial-gradient(1100px 760px at 110% 4%,#3a1a55 0,transparent 52%),
+      radial-gradient(900px 700px at 50% 120%,#0a1338 0,transparent 60%),
       linear-gradient(180deg,var(--bg0),var(--bg1) 55%,var(--bg0));
   }
-  body::before{
-    content:""; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.5;
-    background-image:
-      radial-gradient(1.4px 1.4px at 18% 22%, rgba(255,255,255,.55), transparent),
-      radial-gradient(1.2px 1.2px at 73% 14%, rgba(255,255,255,.45), transparent),
-      radial-gradient(1.1px 1.1px at 42% 64%, rgba(255,255,255,.40), transparent),
-      radial-gradient(1.3px 1.3px at 88% 52%, rgba(255,255,255,.38), transparent),
-      radial-gradient(1px 1px at 30% 88%, rgba(255,255,255,.35), transparent),
-      radial-gradient(1px 1px at 62% 78%, rgba(255,255,255,.30), transparent);
-  }
-  main{position:relative; z-index:1; max-width:1000px; margin:0 auto; padding:0 clamp(14px,3vw,28px) 60px}
+  main{position:relative; z-index:1; max-width:1040px; margin:0 auto; padding:0 clamp(14px,3vw,28px) 60px}
 
-  /* header */
   header{
     position:sticky; top:0; z-index:50; display:flex; align-items:center; gap:13px;
     padding:12px clamp(14px,3vw,28px); border-bottom:1px solid var(--line);
-    background:linear-gradient(180deg,rgba(8,13,28,.92),rgba(6,10,22,.66));
+    background:linear-gradient(180deg,rgba(7,9,22,.92),rgba(6,8,20,.6));
     backdrop-filter:blur(11px) saturate(150%); -webkit-backdrop-filter:blur(11px) saturate(150%);
   }
-  .star{width:42px;height:42px;flex:0 0 auto;display:grid;place-items:center;filter:drop-shadow(0 0 12px rgba(245,208,97,.55))}
+  .star{width:42px;height:42px;flex:0 0 auto;display:grid;place-items:center;filter:drop-shadow(0 0 13px rgba(245,208,97,.6))}
   .star svg{width:100%;height:100%}
-  .star .ring{transform-origin:center; animation:spin 14s linear infinite}
+  .star .ring{transform-origin:center; animation:spin 16s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
-  header h1{font-size:16px; margin:0; line-height:1.15; letter-spacing:.2px}
+  header h1{font-size:16px; margin:0; line-height:1.15; letter-spacing:.4px}
   header h1 small{display:block; font-size:10.5px; color:var(--dim); font-weight:500; letter-spacing:.3px; margin-top:2px}
 
-  /* intro */
   .intro{padding:30px 2px 6px}
-  .kicker{font-size:11px; letter-spacing:2.4px; text-transform:uppercase; color:var(--star); font-weight:700}
-  .intro h2{font-size:clamp(25px,4.2vw,40px); line-height:1.1; margin:12px 0 0; font-weight:800; letter-spacing:-.5px}
-  .intro h2 .g{background:linear-gradient(90deg,var(--star),#ffe7a0);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .intro p.lede{font-size:clamp(15px,1.7vw,17.5px); color:var(--dim); max-width:740px; margin:14px 0 0}
+  .kicker{font-size:11px; letter-spacing:2.6px; text-transform:uppercase; color:var(--gold); font-weight:700}
+  .intro h2{font-size:clamp(25px,4.4vw,42px); line-height:1.08; margin:12px 0 0; font-weight:800; letter-spacing:-.5px}
+  .intro h2 .g{background:linear-gradient(90deg,var(--gold),#ffe7a0 60%,var(--vi));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .intro p.lede{font-size:clamp(15px,1.7vw,17.5px); color:var(--dim); max-width:760px; margin:14px 0 0}
   .tagrow{display:flex; flex-wrap:wrap; gap:8px; margin-top:18px}
-  .tag{font-size:11.5px; color:var(--dim); border:1px solid var(--line); background:rgba(16,26,56,.7); border-radius:999px; padding:5px 12px}
+  .tag{font-size:11.5px; color:var(--dim); border:1px solid var(--line); background:rgba(18,22,52,.6); border-radius:999px; padding:5px 12px}
   .tag b{color:var(--ink); font-weight:700}
 
-  /* section header */
-  section.block{margin-top:34px}
-  .h-row{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:14px}
+  section.block{margin-top:30px}
+  .h-row{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:13px}
   .h-row h3{font-size:19px; margin:0; font-weight:750}
-  .h-row .num{font-family:var(--mono); font-size:12px; color:var(--star); border:1px solid var(--line2); border-radius:7px; padding:2px 8px}
+  .h-row .num{font-family:var(--mono); font-size:12px; color:var(--gold); border:1px solid var(--line2); border-radius:7px; padding:2px 8px}
   .h-row .sub{font-size:13px; color:var(--faint); margin-left:auto}
 
-  /* scene */
-  .scene-wrap{border:1px solid var(--line); border-radius:16px; background:rgba(8,12,24,.55); padding:8px 8px 2px; overflow:hidden; box-shadow:0 20px 50px -28px rgba(0,0,0,.8)}
-  .scene{display:block; width:100%; height:auto}
-  .node{opacity:.4; transition:opacity .5s var(--ease), filter .5s var(--ease)}
-  .node.active{opacity:1}
-  .nMaster.active{filter:drop-shadow(0 0 13px rgba(245,208,97,.6))}
-  .nFeeder.active{filter:drop-shadow(0 0 11px rgba(124,150,255,.6))}
-  .nYou.active,.nDisk.active{filter:drop-shadow(0 0 10px rgba(159,198,255,.45))}
-  .tok{opacity:0; transition:opacity .35s}
-  .tok.show{opacity:1}
-  .scene-legend{display:flex; flex-wrap:wrap; gap:7px 14px; padding:9px 8px 5px; font-size:11px; color:var(--dim)}
-  .scene-legend span{display:inline-flex; align-items:center; gap:6px}
-  .scene-legend i{width:14px; height:3px; border-radius:2px; display:inline-block}
+  /* galaxy stage */
+  .stage{position:relative; height:clamp(400px,64vh,720px); border:1px solid var(--line); border-radius:20px; overflow:hidden;
+    background:radial-gradient(120% 90% at 50% 45%, #0a0c24 0, #05060f 75%); box-shadow:0 30px 70px -34px rgba(0,0,0,.85), inset 0 0 120px rgba(60,40,120,.18)}
+  #sky{position:absolute; inset:0; width:100%; height:100%; display:block; cursor:grab; touch-action:none}
+  #sky:active{cursor:grabbing}
+  .hint{position:absolute; top:12px; right:14px; font-size:11px; color:var(--faint); letter-spacing:.4px; padding:5px 10px; border:1px solid var(--line); border-radius:999px; background:rgba(8,10,24,.5); backdrop-filter:blur(6px); pointer-events:none}
+  .hint b{color:var(--dim); font-weight:600}
 
-  /* player */
-  .player{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:14px 0 12px; padding:9px 11px; border:1px solid var(--line); border-radius:13px; background:rgba(10,16,32,.6)}
-  .pbtn{width:38px; height:38px; border-radius:10px; border:1px solid var(--line2); background:rgba(10,16,36,.85); color:var(--ink); cursor:pointer; font-size:14px; display:grid; place-items:center; transition:.15s var(--ease)}
-  .pbtn:hover{background:#17244c; border-color:#37538f}
-  .pbtn.play{background:linear-gradient(180deg,var(--star),var(--star2)); color:#0a0f1f; border-color:transparent; font-size:16px; width:46px; height:46px}
-  .pstatus{font-size:13px; color:var(--dim); margin-left:7px; white-space:nowrap}
-  .pstatus #stepNum{color:var(--star); font-weight:800; font-family:var(--mono)}
+  .player{position:absolute; left:12px; right:12px; bottom:12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    padding:9px 11px; border:1px solid var(--line2); border-radius:14px; background:var(--glass);
+    backdrop-filter:blur(14px) saturate(150%); -webkit-backdrop-filter:blur(14px) saturate(150%)}
+  .pbtn{width:38px; height:38px; border-radius:10px; border:1px solid var(--line2); background:rgba(12,16,38,.8); color:var(--ink); cursor:pointer; font-size:14px; display:grid; place-items:center; transition:.15s var(--ease)}
+  .pbtn:hover{background:#1a2350; border-color:#3a4a86}
+  .pbtn.play{background:linear-gradient(180deg,var(--gold),var(--gold2)); color:#10101e; border-color:transparent; font-size:16px; width:46px; height:46px}
+  .pstatus{font-size:13px; color:var(--dim); margin-left:6px; white-space:nowrap}
+  .pstatus #stepNum{color:var(--gold); font-weight:800; font-family:var(--mono)}
   .pstatus .sl{color:var(--faint)} .pstatus .nm{color:var(--ink); font-weight:700}
-  .speed{margin-left:auto; display:inline-flex; gap:3px; background:rgba(8,13,28,.7); border:1px solid var(--line); border-radius:9px; padding:3px}
+  .speed{margin-left:auto; display:inline-flex; gap:3px; background:rgba(8,11,28,.7); border:1px solid var(--line); border-radius:9px; padding:3px}
   .speed button{border:0; background:transparent; color:var(--dim); font-family:inherit; font-size:11.5px; font-weight:700; padding:5px 9px; border-radius:7px; cursor:pointer}
-  .speed button.on{background:#1b2a55; color:#fff}
+  .speed button.on{background:#23306a; color:#fff}
+  @media(max-width:560px){.pstatus{margin-left:2px; font-size:12px} .speed{margin-left:0}}
 
-  /* progress dots */
-  .dots{display:flex; gap:7px; flex-wrap:wrap; margin-bottom:16px}
-  .dot{display:flex; align-items:center; gap:7px; cursor:pointer; border:1px solid var(--line); background:rgba(10,16,32,.55); border-radius:999px; padding:5px 11px 5px 7px; transition:.15s var(--ease)}
+  .dots{display:flex; gap:7px; flex-wrap:wrap; margin:16px 0}
+  .dot{display:flex; align-items:center; gap:7px; cursor:pointer; border:1px solid var(--line); background:rgba(12,16,38,.5); border-radius:999px; padding:5px 11px 5px 7px; transition:.15s var(--ease)}
   .dot:hover{border-color:var(--line2)}
   .dot .dn{width:21px; height:21px; border-radius:50%; display:grid; place-items:center; font-family:var(--mono); font-size:10.5px; font-weight:800; background:rgba(255,255,255,.08); color:var(--faint)}
   .dot .dl{font-size:11.5px; color:var(--faint)}
-  .dot.done .dn{background:rgba(74,222,128,.18); color:var(--good)}
-  .dot.active{border-color:var(--star2); background:linear-gradient(180deg,rgba(58,46,20,.5),rgba(20,16,8,.35))}
-  .dot.active .dn{background:linear-gradient(180deg,var(--star),var(--star2)); color:#0a0f1f}
+  .dot.done .dn{background:rgba(94,224,138,.18); color:var(--good)}
+  .dot.active{border-color:var(--gold); background:linear-gradient(180deg,rgba(58,46,20,.5),rgba(20,16,8,.3))}
+  .dot.active .dn{background:linear-gradient(180deg,var(--gold),var(--gold2)); color:#10101e}
   .dot.active .dl{color:var(--ink); font-weight:700}
   @media(max-width:560px){.dot .dl{display:none}}
 
-  /* active step card */
-  .acard{border:1px solid var(--star2); border-radius:15px; background:linear-gradient(180deg,rgba(20,24,44,.7),rgba(10,14,28,.7)); padding:16px 17px 17px; box-shadow:0 16px 40px -26px rgba(251,191,36,.45)}
+  .acard{border:1px solid var(--line2); border-radius:16px; background:linear-gradient(180deg,rgba(18,22,48,.66),rgba(10,12,28,.66)); padding:16px 17px 17px; box-shadow:0 18px 44px -28px rgba(124,92,255,.5)}
   .acard.flash{animation:cardin .42s var(--ease)}
   @keyframes cardin{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
   .ac-head{display:flex; align-items:center; gap:11px; flex-wrap:wrap}
-  .ac-head .badge{font-family:var(--mono); font-weight:800; font-size:14px; color:#0a0f1f; width:30px; height:30px; border-radius:9px; display:grid; place-items:center; background:linear-gradient(180deg,var(--star),var(--star2)); flex:0 0 auto}
+  .ac-head .badge{font-family:var(--mono); font-weight:800; font-size:14px; color:#10101e; width:30px; height:30px; border-radius:9px; display:grid; place-items:center; background:linear-gradient(180deg,var(--gold),var(--gold2)); flex:0 0 auto}
   .ac-head .ac-name{font-size:17px; font-weight:750}
-  .ac-head .ac-tag{font-size:12px; color:var(--star)}
+  .ac-head .ac-tag{font-size:12px; color:var(--gold)}
   .dir{margin-left:auto; font-size:10.5px; font-weight:800; letter-spacing:.5px; padding:4px 10px; border-radius:999px; white-space:nowrap; animation:pulse 2.3s var(--ease) infinite}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.58}}
   body.paused .dir, body.paused .star .ring{animation-play-state:paused}
-  .dir.dispatch{color:#1a1405; background:linear-gradient(90deg,var(--star),var(--star2))}
-  .dir.returnf{color:#06160d; background:linear-gradient(90deg,#62e293,var(--good))}
-  .dir.dialogue{color:#0a0f1f; background:linear-gradient(90deg,var(--cy),var(--vi))}
+  .dir.dispatch{color:#15110a; background:linear-gradient(90deg,var(--gold),var(--gold2))}
+  .dir.returnf{color:#07160e; background:linear-gradient(90deg,#7fe8a6,var(--good))}
+  .dir.dialogue{color:#10101e; background:linear-gradient(90deg,var(--cy),var(--vi))}
   .ac-lead{font-size:14px; color:var(--dim); margin:11px 0 0}
   .lanes{display:grid; grid-template-columns:1fr 1fr; gap:11px; margin-top:13px}
   @media(max-width:680px){.lanes{grid-template-columns:1fr}}
-  .lane{border:1px solid var(--line); border-radius:11px; padding:11px 13px; background:rgba(10,16,32,.5)}
-  .lane.m{border-color:rgba(245,208,97,.32); background:linear-gradient(180deg,rgba(42,33,12,.34),rgba(13,10,6,.18))}
-  .lane.f{border-color:rgba(124,150,255,.3); background:linear-gradient(180deg,rgba(16,22,48,.42),rgba(14,12,34,.22))}
-  .lane.idle{border-style:dashed; background:transparent; opacity:.65}
+  .lane{border:1px solid var(--line); border-radius:11px; padding:11px 13px; background:rgba(12,16,34,.5)}
+  .lane.m{border-color:rgba(245,208,97,.32); background:linear-gradient(180deg,rgba(42,33,12,.32),rgba(13,10,6,.16))}
+  .lane.f{border-color:rgba(124,150,255,.3); background:linear-gradient(180deg,rgba(18,22,52,.42),rgba(16,14,38,.22))}
+  .lane.idle{border-style:dashed; background:transparent; opacity:.62}
   .lane .lt{font-size:10px; letter-spacing:1.4px; text-transform:uppercase; font-weight:800; margin-bottom:6px}
-  .lane.m .lt{color:var(--star)} .lane.f .lt{color:#9fc6ff} .lane.idle .lt{color:var(--faint)}
+  .lane.m .lt{color:var(--gold)} .lane.f .lt{color:#a9c8ff} .lane.idle .lt{color:var(--faint)}
   .lane p{margin:0; font-size:13px; color:var(--dim)}
   .lane.m p{color:#ecdcbb}
-  .rolelab{margin:11px 0 6px; font-size:10.5px; letter-spacing:.6px; text-transform:uppercase; color:#9fc6ff; font-weight:700}
+  .rolelab{margin:11px 0 6px; font-size:10.5px; letter-spacing:.6px; text-transform:uppercase; color:#a9c8ff; font-weight:700}
   .rolechips{display:flex; flex-wrap:wrap; gap:6px}
-  .chip{font-size:11px; color:var(--dim); border:1px solid var(--line2); border-radius:999px; padding:4px 9px; background:rgba(14,22,44,.7)}
+  .chip{font-size:11px; color:var(--dim); border:1px solid var(--line2); border-radius:999px; padding:4px 9px; background:rgba(16,20,46,.7)}
 
   .gates{display:flex; gap:7px; flex-wrap:wrap; align-items:center; margin-top:13px}
   .gates .glab{font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--faint); font-weight:700; margin-right:2px}
-  .gch{font-family:var(--mono); font-weight:800; font-size:12px; width:30px; height:30px; border-radius:8px; display:grid; place-items:center; border:1px solid var(--line2); color:var(--faint); background:rgba(10,16,34,.6); animation:gatelit .55s var(--ease) both}
-  @keyframes gatelit{0%{opacity:.25; transform:scale(.7)} 60%{opacity:1; transform:scale(1.14)} 100%{opacity:1; transform:scale(1); color:#06160d; background:linear-gradient(180deg,#62e293,var(--good)); border-color:transparent}}
+  .gch{font-family:var(--mono); font-weight:800; font-size:12px; width:30px; height:30px; border-radius:8px; display:grid; place-items:center; border:1px solid var(--line2); color:var(--faint); background:rgba(12,16,36,.6); animation:gatelit .55s var(--ease) both}
+  @keyframes gatelit{0%{opacity:.25; transform:scale(.7)} 60%{opacity:1; transform:scale(1.14)} 100%{opacity:1; transform:scale(1); color:#07160e; background:linear-gradient(180deg,#7fe8a6,var(--good)); border-color:transparent}}
   .gch.crit{animation-name:gatelitc}
-  @keyframes gatelitc{0%{opacity:.25; transform:scale(.7)} 60%{opacity:1; transform:scale(1.14)} 100%{opacity:1; transform:scale(1); color:#1a1405; background:linear-gradient(180deg,var(--star),var(--star2)); border-color:transparent}}
+  @keyframes gatelitc{0%{opacity:.25; transform:scale(.7)} 60%{opacity:1; transform:scale(1.14)} 100%{opacity:1; transform:scale(1); color:#15110a; background:linear-gradient(180deg,var(--gold),var(--gold2)); border-color:transparent}}
 
   .pts{margin:13px 0 0; padding:0; list-style:none; display:grid; gap:8px}
   .pts li{position:relative; padding-left:20px; font-size:13px; color:var(--ink)}
   .pts li::before{content:""; position:absolute; left:3px; top:7px; width:7px; height:7px; border-radius:2px; transform:rotate(45deg); background:linear-gradient(135deg,var(--cy),var(--vi))}
-  .out{margin-top:13px; font-family:var(--mono); font-size:12px; color:var(--good); border:1px dashed rgba(74,222,128,.35); background:rgba(74,222,128,.06); border-radius:9px; padding:8px 11px}
+  .out{margin-top:13px; font-family:var(--mono); font-size:12px; color:var(--good); border:1px dashed rgba(94,224,138,.35); background:rgba(94,224,138,.06); border-radius:9px; padding:8px 11px}
 
-  footer{margin-top:42px; padding-top:20px; border-top:1px solid var(--line); color:var(--faint); font-size:12.5px; display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center}
-  footer .star-s{color:var(--star)}
+  footer{margin-top:40px; padding-top:20px; border-top:1px solid var(--line); color:var(--faint); font-size:12.5px; display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center}
+  footer .star-s{color:var(--gold)}
 </style>
 </head>
 <body>
@@ -168,15 +148,15 @@
       </radialGradient></defs>
     </svg>
   </div>
-  <h1>POLARIS<small>Multi-Agent Operating Model</small></h1>
+  <h1>POLARIS<small>Multi-Agent Operating Model · galaxy v1</small></h1>
 </header>
 
 <main>
 
   <div class="intro">
     <div class="kicker">★ How it works</div>
-    <h2>One orchestrator. A fleet of <span class="g">stateless specialists.</span></h2>
-    <p class="lede">Polaris turns a single request into a verified, cited output. Press play and watch a task run the whole pipeline — what the <b>Master</b> does at each step, and what the <b>Feeder</b> specialists do.</p>
+    <h2>Inside the <span class="g">Polaris galaxy.</span></h2>
+    <p class="lede">Polaris is your north star: one <b>Master</b> orchestrator burning at the core, and a constellation of stateless <b>Feeder</b> specialists around it. Press play and watch a task travel the galaxy — from your request to a verified, cited output. Drag to look around.</p>
     <div class="tagrow">
       <span class="tag"><b>7</b> stages</span>
       <span class="tag"><b>A–F</b> QA gates</span>
@@ -189,114 +169,28 @@
   <section class="block">
     <div class="h-row">
       <span class="num">LIVE RUN</span>
-      <h3>Watch a task run, step by step</h3>
-      <span class="sub">press play — or step through it</span>
+      <h3>Watch a task run through the galaxy</h3>
+      <span class="sub">drag to orbit · press play</span>
     </div>
 
-    <div class="scene-wrap">
-      <svg class="scene" id="scene" viewBox="0 0 960 380" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" role="img" aria-label="Animated diagram of a task moving through Polaris.">
-        <defs>
-          <marker id="ah" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#26375f"/></marker>
-          <marker id="ahg" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f5d061"/></marker>
-        </defs>
-
-        <!-- connectors -->
-        <g fill="none" stroke="#1f2d4f" stroke-width="1.3">
-          <path id="pReq" d="M176,186 L366,186" marker-end="url(#ah)"/>
-          <path id="pD1" d="M556,168 C648,142 690,112 766,96" marker-end="url(#ah)"/>
-          <path id="pD2" d="M556,189 L766,189" marker-end="url(#ah)"/>
-          <path id="pD3" d="M556,210 C648,236 690,266 766,282" marker-end="url(#ah)"/>
-          <path id="pWr" d="M464,258 L464,298" marker-end="url(#ah)"/>
-          <path id="pDel" d="M384,250 C300,335 180,318 152,206" stroke="#7a5a1a" stroke-dasharray="5 5" marker-end="url(#ahg)"/>
-        </g>
-        <g fill="none" stroke="none">
-          <path id="pR1" d="M766,104 C690,118 648,150 558,176"/>
-          <path id="pR2" d="M766,196 L558,196"/>
-          <path id="pR3" d="M766,274 C690,260 648,228 558,202"/>
-        </g>
-
-        <!-- nodes -->
-        <g id="nYou" class="node nYou">
-          <rect x="56" y="150" width="120" height="72" rx="13" fill="#0a1022" stroke="#26375f"/>
-          <text x="116" y="183" text-anchor="middle" fill="#eaf1ff" font-size="15" font-weight="700" font-family="-apple-system,Segoe UI,Roboto,sans-serif">YOU</text>
-          <text x="116" y="201" text-anchor="middle" fill="#5f6f9a" font-size="10" font-family="-apple-system,Segoe UI,Roboto,sans-serif">request + goal</text>
-        </g>
-
-        <g id="nMaster" class="node nMaster">
-          <rect x="372" y="118" width="184" height="140" rx="16" fill="#15110a" stroke="#f5d061" stroke-opacity=".55" stroke-width="1.4"/>
-          <path d="M464 138 l3 9 9.5 3 -9.5 3 -3 9 -3 -9 -9.5 -3 9.5 -3 z" fill="#f5d061"/>
-          <text x="464" y="186" text-anchor="middle" fill="#ffe7a0" font-size="16" font-weight="800" font-family="-apple-system,Segoe UI,Roboto,sans-serif">MASTER</text>
-          <text x="464" y="205" text-anchor="middle" fill="#9fb2da" font-size="10" font-family="-apple-system,Segoe UI,Roboto,sans-serif">orchestrator · main session</text>
-          <text x="464" y="222" text-anchor="middle" fill="#5f6f9a" font-size="9.5" font-family="-apple-system,Segoe UI,Roboto,sans-serif">holds the Agent tool</text>
-          <text x="464" y="238" text-anchor="middle" fill="#5f6f9a" font-size="9.5" font-family="-apple-system,Segoe UI,Roboto,sans-serif">owns all file writes</text>
-        </g>
-
-        <g id="nF1" class="node nFeeder">
-          <rect x="772" y="66" width="168" height="58" rx="12" fill="#120f29" stroke="#7c96ff" stroke-opacity=".5"/>
-          <text x="856" y="90" text-anchor="middle" fill="#cfe6ff" font-size="12.5" font-weight="700" font-family="-apple-system,Segoe UI,Roboto,sans-serif">FEEDER</text>
-          <text x="856" y="107" text-anchor="middle" fill="#5f6f9a" font-size="9.5" font-family="-apple-system,Segoe UI,Roboto,sans-serif">Context · Research</text>
-        </g>
-        <g id="nF2" class="node nFeeder">
-          <rect x="772" y="160" width="168" height="58" rx="12" fill="#120f29" stroke="#7c96ff" stroke-opacity=".5"/>
-          <text x="856" y="184" text-anchor="middle" fill="#cfe6ff" font-size="12.5" font-weight="700" font-family="-apple-system,Segoe UI,Roboto,sans-serif">FEEDER</text>
-          <text x="856" y="201" text-anchor="middle" fill="#5f6f9a" font-size="9.5" font-family="-apple-system,Segoe UI,Roboto,sans-serif">Document batch</text>
-        </g>
-        <g id="nF3" class="node nFeeder">
-          <rect x="772" y="254" width="168" height="58" rx="12" fill="#120f29" stroke="#7c96ff" stroke-opacity=".5"/>
-          <text x="856" y="278" text-anchor="middle" fill="#cfe6ff" font-size="12.5" font-weight="700" font-family="-apple-system,Segoe UI,Roboto,sans-serif">FEEDER</text>
-          <text x="856" y="295" text-anchor="middle" fill="#5f6f9a" font-size="9.5" font-family="-apple-system,Segoe UI,Roboto,sans-serif">QA / Critic</text>
-        </g>
-        <text x="856" y="332" text-anchor="middle" fill="#5f6f9a" font-size="9.5" font-family="-apple-system,Segoe UI,Roboto,sans-serif">stateless · read + web only</text>
-
-        <!-- disk -->
-        <g id="nDisk" class="node nDisk">
-          <ellipse cx="464" cy="300" rx="52" ry="10" fill="#0a1022" stroke="#26375f"/>
-          <path d="M412,300 v30 a52 10 0 0 0 104 0 v-30" fill="#0a1022" stroke="#26375f"/>
-          <ellipse cx="464" cy="330" rx="52" ry="10" fill="none" stroke="#1a2747"/>
-          <text x="464" y="354" text-anchor="middle" fill="#5f6f9a" font-size="10" font-family="-apple-system,Segoe UI,Roboto,sans-serif">run folder · disk</text>
-        </g>
-
-        <!-- tokens -->
-        <g>
-          <circle id="tReq" class="tok" r="5" fill="#ffffff"><animateMotion dur="1.3s" repeatCount="indefinite"><mpath xlink:href="#pReq" href="#pReq"/></animateMotion></circle>
-          <circle id="tD1" class="tok" r="4.5" fill="#22d3ee"><animateMotion dur="1.4s" repeatCount="indefinite"><mpath xlink:href="#pD1" href="#pD1"/></animateMotion></circle>
-          <circle id="tD2" class="tok" r="4.5" fill="#22d3ee"><animateMotion dur="1.35s" repeatCount="indefinite"><mpath xlink:href="#pD2" href="#pD2"/></animateMotion></circle>
-          <circle id="tD3" class="tok" r="4.5" fill="#22d3ee"><animateMotion dur="1.45s" repeatCount="indefinite"><mpath xlink:href="#pD3" href="#pD3"/></animateMotion></circle>
-          <circle id="tR1" class="tok" r="4.5" fill="#4ade80"><animateMotion dur="1.4s" repeatCount="indefinite"><mpath xlink:href="#pR1" href="#pR1"/></animateMotion></circle>
-          <circle id="tR2" class="tok" r="4.5" fill="#4ade80"><animateMotion dur="1.35s" repeatCount="indefinite"><mpath xlink:href="#pR2" href="#pR2"/></animateMotion></circle>
-          <circle id="tR3" class="tok" r="4.5" fill="#4ade80"><animateMotion dur="1.45s" repeatCount="indefinite"><mpath xlink:href="#pR3" href="#pR3"/></animateMotion></circle>
-          <circle id="tWr" class="tok" r="4.5" fill="#fbbf24"><animateMotion dur="1.0s" repeatCount="indefinite"><mpath xlink:href="#pWr" href="#pWr"/></animateMotion></circle>
-          <circle id="tDel" class="tok" r="5.5" fill="#f5d061"><animateMotion dur="1.7s" repeatCount="indefinite"><mpath xlink:href="#pDel" href="#pDel"/></animateMotion></circle>
-        </g>
-      </svg>
-
-      <div class="scene-legend">
-        <span><i style="background:#ffffff"></i> request</span>
-        <span><i style="background:#22d3ee"></i> dispatch → Feeders</span>
-        <span><i style="background:#4ade80"></i> findings return</span>
-        <span><i style="background:#fbbf24"></i> write to disk</span>
-        <span><i style="background:#f5d061"></i> final output</span>
+    <div class="stage">
+      <canvas id="sky"></canvas>
+      <div class="hint"><b>drag</b> to look around</div>
+      <div class="player">
+        <button class="pbtn" id="restart" title="Restart" aria-label="Restart">⟲</button>
+        <button class="pbtn" id="prev" title="Previous step" aria-label="Previous step">◀</button>
+        <button class="pbtn play" id="play" title="Play / Pause" aria-label="Play or pause">▶</button>
+        <button class="pbtn" id="next" title="Next step" aria-label="Next step">▶</button>
+        <div class="pstatus">Stage <span id="stepNum">1</span><span class="sl"> / 7</span> · <span class="nm" id="stepName">Intake</span></div>
+        <div class="speed" id="speed">
+          <button data-spd="0.6">0.6×</button>
+          <button data-spd="1" class="on">1×</button>
+          <button data-spd="1.8">1.8×</button>
+        </div>
       </div>
     </div>
 
-    <!-- player -->
-    <div class="player">
-      <button class="pbtn" id="restart" title="Restart" aria-label="Restart">⟲</button>
-      <button class="pbtn" id="prev" title="Previous step" aria-label="Previous step">◀</button>
-      <button class="pbtn play" id="play" title="Play / Pause" aria-label="Play or pause">▶</button>
-      <button class="pbtn" id="next" title="Next step" aria-label="Next step">▶</button>
-      <div class="pstatus">Stage <span id="stepNum">1</span><span class="sl"> / 7</span> · <span class="nm" id="stepName">Intake</span></div>
-      <div class="speed" id="speed">
-        <button data-spd="0.6">0.6×</button>
-        <button data-spd="1" class="on">1×</button>
-        <button data-spd="1.8">1.8×</button>
-      </div>
-    </div>
-
-    <!-- progress dots -->
     <div class="dots" id="dots"></div>
-
-    <!-- active step card -->
     <div class="acard" id="acard"></div>
   </section>
 
@@ -309,7 +203,7 @@
 </main>
 
 <script>
-/* ---------------- data ---------------- */
+/* ===================== process content ===================== */
 const ROLES = ["Baseline Research","Current Events / Case Scan","Benchmark / Reference","Context Mapping","Document Batch","Cross-reference","Domain Specialist","Market / Practice","Legal / Regulatory","Commercial / Strategy","Data / Spreadsheet","Coding / Architecture","QA / Critic","Red-Team","Recovery","Client-Protective Drafting","Drafting / Style"];
 
 const STAGES = [
@@ -323,7 +217,6 @@ const STAGES = [
       "Look up a domain checklist when the document type has one, and carry it into dispatch.",
       "Ask you only when the goal is genuinely ambiguous or the client position is unknown — it is never guessed."
     ], out:"→ a clear target + scope" },
-
   { n:"2", name:"Tier & Plan", tag:"Choose depth, design the agents", dir:null,
     master:"Selects one of three quality tiers — Quick, Standard, or Enhanced / Client-Protective — and designs the agent structure and batch plan. Coverage invariant: every clause, question, sheet or module is assigned to at least one full-scan pass.",
     feeder:null,
@@ -333,7 +226,6 @@ const STAGES = [
       "Design the agent structure (Master-only, one specialist, or context-mapper + parallel batch feeders).",
       "batch_plan.md maps every work unit to a batch / feeder, proving 100% coverage before dispatch."
     ], out:"→ tier + agent structure + batch plan" },
-
   { n:"3", name:"Plan on Disk", tag:"Write the plan down", dir:null,
     master:"Creates a timestamped run folder — input/, internal/, final/ — and writes execution_plan.md. From here a minimum file set always exists, so nothing is lost mid-run.",
     feeder:null,
@@ -343,7 +235,6 @@ const STAGES = [
       "Write execution_plan.md: goal, assumptions, tier, agent structure, batch plan, source policy and quality gates.",
       "A minimum file set always exists — even a Quick run leaves an audit trail."
     ], out:"→ run folder + execution_plan.md" },
-
   { n:"4", name:"Dispatch", tag:"Send the work to Feeders", dir:"dispatch",
     master:"Sends each Feeder a Dispatch Package: role, scope, objective, language rule, required checks and the output format (with a coverage list). Runs in waves of ~3–5 and checkpoints each batch to disk. Subagents can't spawn subagents — Master orchestrates end to end and owns every file write.",
     feeder:"Stateless specialists read the real source themselves — Master passes file paths, never pasted text (the core anti-fabrication control) — and work only their assigned scope. Tools: Read · Grep · Glob · WebSearch · WebFetch.",
@@ -355,7 +246,6 @@ const STAGES = [
       "Dispatch runs in waves of ~3–5 Feeders; each batch is checkpointed to disk before the next wave.",
       "Feeders are independent — they verify on the source, not on each other."
     ], out:"→ internal/feeder_output_*.md (checkpointed)" },
-
   { n:"5", name:"QA Gates A–F", tag:"Check every batch", dir:"returnf",
     master:"Runs gates A–F on each returned batch — A Format · B Source content (re-checked against the real file) · C Research & current-context · D Depth · E Traceable location · F Coverage matrix (zero uncovered cells). A failed gate triggers a correction; a faulty result is never synthesised.",
     feeder:"Return structured findings + a coverage list as a single final message — Feeders can't write files, only Master does. Enhanced runs add a mandatory QA / Critic (or Red-Team) Feeder pass.",
@@ -366,7 +256,6 @@ const STAGES = [
       "Gate F requires a coverage matrix with zero uncovered cells before synthesis.",
       "Enhanced runs add a mandatory QA / Critic (or Red-Team) pass on top of A–F."
     ], out:"→ coverage_matrix.md · qa_critic_output.md" },
-
   { n:"6", name:"Resolve", tag:"Clarify · adjudicate · recover", dir:"dialogue",
     master:"Clarifies by re-spawning the same Feeder with its previous output + one focused query (max 2 rounds per issue). Adjudicates conflicts on source authority; on timeout it splits only the remaining work — never restarts the task — and escalates to you when the basis is genuinely unclear.",
     feeder:"Answer the focused query as a delta, or a Recovery Feeder completes just the missing slice — no full rewrite.",
@@ -376,7 +265,6 @@ const STAGES = [
       "Conflicts are adjudicated on source authority; a genuinely unresolved conflict is escalated to you.",
       "On timeout, only the remaining work is split and re-run — the whole task is never restarted."
     ], out:"→ discussion_log.md · conflict_details.md" },
-
   { n:"7", name:"Deliver", tag:"Synthesise · verify · save", dir:null,
     master:"Synthesises an answer to your actual goal, runs the final checklist, then saves every file and verifies the filesystem — claiming “saved” only after the files are confirmed on disk. Reviews report a double count (N parent issues / M sub-findings).",
     feeder:null,
@@ -388,36 +276,270 @@ const STAGES = [
     ], out:"→ final/main_output.md + run_summary.md" }
 ];
 
-/* scene activation per step (node ids + token ids) */
-const NODE = {you:"nYou", master:"nMaster", f1:"nF1", f2:"nF2", f3:"nF3", disk:"nDisk"};
-const ALL_NODES = Object.values(NODE);
-const ALL_TOKS = ["tReq","tD1","tD2","tD3","tR1","tR2","tR3","tWr","tDel"];
-const SCENE = [
-  { nodes:["you","master"],            toks:["tReq"] },
-  { nodes:["master"],                  toks:[] },
-  { nodes:["master","disk"],           toks:["tWr"] },
-  { nodes:["master","f1","f2","f3"],   toks:["tD1","tD2","tD3"] },
-  { nodes:["master","f1","f2","f3"],   toks:["tR1","tR2","tR3"] },
-  { nodes:["master","f2"],             toks:["tD2","tR2"] },
-  { nodes:["master","disk","you"],     toks:["tWr","tDel"] }
+/* per-step scene: which nodes glow + token paths [from,to,color] */
+const FLOW = [
+  { nodes:["you","master"],          toks:[["you","master","#ffffff"]] },
+  { nodes:["master"],                toks:[] },
+  { nodes:["master","disk"],         toks:[["master","disk","#fbbf24"]] },
+  { nodes:["master","f1","f2","f3"], toks:[["master","f1","#38bdf8"],["master","f2","#38bdf8"],["master","f3","#38bdf8"]] },
+  { nodes:["master","f1","f2","f3"], toks:[["f1","master","#5ee08a"],["f2","master","#5ee08a"],["f3","master","#5ee08a"]] },
+  { nodes:["master","f2"],           toks:[["master","f2","#a78bfa"],["f2","master","#a78bfa"]] },
+  { nodes:["master","disk","you"],   toks:[["master","disk","#fbbf24"],["master","you","#f5d061"]] }
 ];
 
-/* ---------------- elements ---------------- */
-const scene   = document.getElementById('scene');
-const acard   = document.getElementById('acard');
-const dotsEl  = document.getElementById('dots');
-const stepNum = document.getElementById('stepNum');
-const stepName= document.getElementById('stepName');
-const playBtn = document.getElementById('play');
-const dirLabel = d => d==='dispatch' ? 'Dispatch ▶' : d==='returnf' ? '◀ Findings return' : d==='dialogue' ? '⇄ Dialogue / recovery' : '';
+/* ===================== galaxy 3D ===================== */
+const cv = document.getElementById('sky');
+const ctx = cv.getContext('2d');
+let W=0, H=0, DPR=1, CX=0, CY=0, PX=0;
+const CAM = 7.2, FOCAL = 3.10;
 
-/* progress dots */
+function resize(){
+  DPR = Math.min(window.devicePixelRatio||1, 2);
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  CX = W/2; const isWide = W/H > 1.4; CY = H*(isWide?0.46:0.45); PX = Math.min(W,H)*0.165;
+}
+window.addEventListener('resize', resize);
+
+/* ---- build the spiral galaxy ---- */
+function rnd(){ return Math.random(); }
+function rndn(){ return (Math.random()+Math.random()+Math.random()-1.5)*0.9; }
+function mix(a,b,k){ return [a[0]+(b[0]-a[0])*k, a[1]+(b[1]-a[1])*k, a[2]+(b[2]-a[2])*k]; }
+function starColor(tr){
+  let c; if(tr<0.5){ c=mix([255,222,150],[238,242,255], tr/0.5); }
+  else { c=mix([238,242,255],[126,150,255], (tr-0.5)/0.5); }
+  if(Math.random()<0.10) c=mix(c,[196,120,255],0.5); /* violet sprinkles */
+  return c;
+}
+const STARS=[];
+(function buildGalaxy(){
+  const ARMS=3, R=5.4, TWIST=2.45;
+  const N=1250;
+  for(let i=0;i<N;i++){
+    const arm = i%ARMS;
+    const r = Math.pow(rnd(),0.70)*R;
+    const spread = (0.55 - r/R*0.32);
+    const ang = arm*(2*Math.PI/ARMS) + r*TWIST + rndn()*spread;
+    const x = Math.cos(ang)*r;
+    const z = Math.sin(ang)*r;
+    const y = rndn()*0.34*(1 - r/R*0.55);
+    const tr = r/R;
+    const col = starColor(tr);
+    const a = 0.35 + 0.5*(1-tr) + Math.random()*0.25;
+    STARS.push({x,y,z, br:0.6+Math.random()*1.5, col, a:Math.min(a,0.95),
+      style:`rgba(${col[0]|0},${col[1]|0},${col[2]|0},`, tw: Math.random()<0.14, ph: Math.random()*6.28});
+  }
+  /* dense bulge */
+  for(let i=0;i<200;i++){
+    const r = Math.pow(rnd(),1.4)*1.7;
+    const ang = rnd()*6.28;
+    const x=Math.cos(ang)*r, z=Math.sin(ang)*r, y=rndn()*0.5*(1-r/1.6);
+    const col = mix([255,232,176],[255,200,120], rnd());
+    STARS.push({x,y,z, br:0.42+Math.random()*0.95, col, a:0.32+Math.random()*0.30,
+      style:`rgba(${col[0]|0},${col[1]|0},${col[2]|0},`, tw:Math.random()<0.2, ph:Math.random()*6.28});
+  }
+})();
+
+/* nebula blobs in screen-space (drift) */
+const NEB = [
+  {x:0.24,y:0.32, r:0.52, c:[110,74,255], a:0.11, sx:0.6, sy:0.4},
+  {x:0.78,y:0.34, r:0.50, c:[34,211,238], a:0.09, sx:-0.5, sy:0.5},
+  {x:0.74,y:0.72, r:0.56, c:[196,74,255], a:0.10, sx:0.3, sy:-0.4},
+  {x:0.30,y:0.68, r:0.46, c:[245,208,97], a:0.07, sx:0.2, sy:0.25}
+];
+
+/* ---- nodes ---- */
+const Rf=3.15, Ry=4.10;
+const NODES = {
+  master:{ label:"MASTER",      sub:"core · orchestrator", col:[245,208,97], type:"m", base:0, r:0, y:0 },
+  f1:{     label:"FEEDER",      sub:"Context · Research",  col:[120,170,255], type:"f", base:0.52, r:Rf, y:0.30 },
+  f2:{     label:"FEEDER",      sub:"Document batch",      col:[120,170,255], type:"f", base:2.62, r:Rf, y:-0.34 },
+  f3:{     label:"FEEDER",      sub:"QA / Critic",         col:[167,139,250], type:"f", base:4.71, r:Rf, y:0.42 },
+  you:{    label:"YOU",         sub:"request + goal",      col:[200,214,255], type:"y", base:3.95, r:Ry, y:0.34 },
+  disk:{   label:"run folder",  sub:"disk",                col:[150,170,220], type:"d", fixed:{x:1.6,y:-1.55,z:-0.6} }
+};
+let orbit=0;
+function worldPos(id){
+  const n=NODES[id];
+  if(n.fixed) return {x:n.fixed.x,y:n.fixed.y,z:n.fixed.z};
+  if(id==='master') return {x:0,y:0.55,z:0};
+  const a = n.base + orbit*(id==='you'?0.35:1);
+  return { x:Math.cos(a)*n.r, y:n.y, z:Math.sin(a)*n.r };
+}
+
+/* ---- camera ---- */
+let angY=0, userAngY=0, baseTilt=-0.40, userTilt=0;
+let dragging=false, lpx=0, lpy=0;
+cv.addEventListener('pointerdown', e=>{ dragging=true; lpx=e.clientX; lpy=e.clientY; try{cv.setPointerCapture(e.pointerId);}catch(_){} });
+cv.addEventListener('pointermove', e=>{ if(!dragging) return; userAngY += (e.clientX-lpx)*0.006; userTilt += (e.clientY-lpy)*0.004; userTilt=Math.max(-0.75,Math.min(0.55,userTilt)); lpx=e.clientX; lpy=e.clientY; });
+cv.addEventListener('pointerup', ()=>dragging=false);
+cv.addEventListener('pointercancel', ()=>dragging=false);
+
+function rot(p){
+  const ay=angY+userAngY, ax=baseTilt+userTilt;
+  let cy=Math.cos(ay), sy=Math.sin(ay);
+  let x=p.x*cy - p.z*sy, z=p.x*sy + p.z*cy, y=p.y;
+  let cx=Math.cos(ax), sx=Math.sin(ax);
+  let y2=y*cx - z*sx, z2=y*sx + z*cx;
+  return {x:x, y:y2, z:z2};
+}
+function project(p){
+  const r=rot(p);
+  const depth=CAM - r.z;
+  if(depth<0.55) return {vis:false};
+  const s=FOCAL/depth;
+  return { x:CX + r.x*s*PX, y:CY - r.y*s*PX, s, depth, vis:true };
+}
+
+/* ---- draw helpers ---- */
+function glow(x,y,rad,r,g,b,a){
+  const grd=ctx.createRadialGradient(x,y,0,x,y,rad);
+  grd.addColorStop(0,`rgba(${r},${g},${b},${a})`);
+  grd.addColorStop(1,`rgba(${r},${g},${b},0)`);
+  ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(x,y,rad,0,6.2832); ctx.fill();
+}
+
+/* ===================== render loop ===================== */
+let time=0;
+function render(ts){
+  time = ts/1000;
+  angY = time*0.030 + Math.sin(time*0.06)*0.05;
+  orbit = time*0.10;
+
+  ctx.clearRect(0,0,W,H);
+  ctx.globalCompositeOperation='lighter';
+
+  /* nebula */
+  for(const nb of NEB){
+    const x=(nb.x + Math.sin(time*0.05*nb.sx)*0.03)*W;
+    const y=(nb.y + Math.cos(time*0.05*nb.sy)*0.03)*H;
+    glow(x,y, nb.r*Math.min(W,H), nb.c[0],nb.c[1],nb.c[2], nb.a);
+  }
+
+  /* project nodes once */
+  const NP={};
+  for(const id in NODES){ NP[id]=project(worldPos(id)); }
+
+  /* core glow at the galactic centre (decoupled from the lifted Master) */
+  const coreP = project({x:0,y:0,z:0});
+  if(coreP.vis){ glow(coreP.x, coreP.y, 120*coreP.s, 255,205,110, 0.14); }
+
+  /* galaxy stars */
+  for(let i=0;i<STARS.length;i++){
+    const st=STARS[i];
+    const p=project(st);
+    if(!p.vis) continue;
+    let a=st.a;
+    if(st.tw) a *= 0.55+0.45*Math.sin(time*2.2+st.ph);
+    a *= Math.min(1, p.s*0.9);
+    if(a<0.03) continue;
+    const sz=Math.max(0.6, st.br*p.s*1.05);
+    ctx.fillStyle=st.style+a.toFixed(3)+')';
+    if(sz>1.7){ ctx.beginPath(); ctx.arc(p.x,p.y,sz,0,6.2832); ctx.fill(); }
+    else { ctx.fillRect(p.x-sz, p.y-sz, sz*2, sz*2); }
+  }
+
+  /* active step scene: links + tokens */
+  const fl = FLOW[cur];
+  const aset = new Set(fl.nodes);
+  /* links */
+  for(const t of fl.toks){
+    const pa=NP[t[0]], pb=NP[t[1]];
+    if(!pa.vis||!pb.vis) continue;
+    ctx.strokeStyle=hexA(t[2],0.22); ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y); ctx.stroke();
+  }
+  /* tokens */
+  fl.toks.forEach((t,ti)=>{
+    const wa=worldPos(t[0]), wb=worldPos(t[1]);
+    const phase=(ti*0.31);
+    let tt=(time*0.55 + phase)%1;
+    const wp={x:wa.x+(wb.x-wa.x)*tt, y:wa.y+(wb.y-wa.y)*tt, z:wa.z+(wb.z-wa.z)*tt};
+    const p=project(wp); if(!p.vis) return;
+    const c=hex(t[2]);
+    glow(p.x,p.y, 14*p.s+5, c[0],c[1],c[2], 0.85);
+    ctx.fillStyle=`rgba(255,255,255,0.95)`; ctx.beginPath(); ctx.arc(p.x,p.y, Math.max(1.6,2.4*p.s),0,6.2832); ctx.fill();
+  });
+
+  /* node glows */
+  for(const id in NODES){
+    const p=NP[id]; if(!p.vis) continue;
+    const n=NODES[id], c=n.col;
+    const active=aset.has(id);
+    const base = id==='master'? 36 : (n.type==='f'?20: 16);
+    const rad = Math.min((base + (active?16:0)) * p.s + 6, (id==='master'?64:34));
+    const ga = (active?0.95:0.5) * (id==='master'?1:0.85);
+    glow(p.x,p.y, rad, c[0],c[1],c[2], ga*0.42);
+    /* core dot (normal) */
+  }
+
+  /* crisp node cores */
+  ctx.globalCompositeOperation='source-over';
+  for(const id in NODES){
+    const p=NP[id]; if(!p.vis) continue;
+    const n=NODES[id], c=n.col, active=aset.has(id);
+    const cr = (id==='master'? 7 : 4.4) * Math.max(.7,p.s) + (active?1.6:0);
+    ctx.beginPath(); ctx.arc(p.x,p.y,cr,0,6.2832);
+    ctx.fillStyle = id==='master' ? '#fff4d6' : `rgb(${c[0]},${c[1]},${c[2]})`;
+    ctx.fill();
+    if(active){ ctx.strokeStyle=hexA(rgbHex(c),0.8); ctx.lineWidth=1.4; ctx.beginPath(); ctx.arc(p.x,p.y,cr+5,0,6.2832); ctx.stroke(); }
+  }
+
+  /* labels — near-first greedy de-overlap, shadow backing, Master above its dot */
+  const labelIds = Object.keys(NODES).filter(id=>NP[id].vis).sort((a,b)=> NP[a].depth - NP[b].depth);
+  const placed=[];
+  ctx.textAlign='center';
+  for(const id of labelIds){
+    const p=NP[id], n=NODES[id], isMaster=(id==='master');
+    const cr = (isMaster? 7 : 4.4) * Math.max(.7,p.s) + (aset.has(id)?1.6:0);
+    let la = 0.5+0.5*Math.min(1,p.s*1.1);
+    if(p.depth > CAM) la *= 0.6;
+    const above = isMaster;
+    ctx.font = (isMaster?'700 13px ':'600 11px ')+'-apple-system,Segoe UI,Roboto,sans-serif';
+    const nameW = ctx.measureText(n.label).width;
+    let ly = above ? (p.y - cr - 6) : (p.y + cr + 6);
+    let tries=0, hit=true;
+    while(hit && tries<3){
+      hit=false;
+      for(const r of placed){ if(Math.abs(p.x-r.x) < (nameW/2 + r.w/2 + 4) && Math.abs(ly-r.y) < 14){ hit=true; break; } }
+      if(hit){ ly += above ? -16 : 16; tries++; }
+    }
+    placed.push({x:p.x, y:ly, w:nameW, h:13});
+    ctx.shadowColor='rgba(4,5,14,0.92)'; ctx.shadowBlur=4;
+    ctx.textBaseline = above ? 'bottom' : 'top';
+    ctx.fillStyle = isMaster ? `rgba(255,231,160,${la})` : `rgba(${n.col[0]},${n.col[1]},${n.col[2]},${la*0.92})`;
+    ctx.fillText(n.label, p.x, ly);
+    const nearCore = coreP.vis && Math.hypot(p.x-coreP.x, p.y-coreP.y) < 40;
+    if(isMaster || (p.s>0.60 && !nearCore && tries<2)){
+      const subY = above ? (ly - 14) : (ly + 14);
+      ctx.font='500 9.5px -apple-system,Segoe UI,Roboto,sans-serif';
+      ctx.fillStyle=`rgba(150,165,210,${la*0.7})`;
+      ctx.fillText(n.sub, p.x, subY);
+      placed.push({x:p.x, y:subY, w:ctx.measureText(n.sub).width, h:11});
+    }
+    ctx.shadowBlur=0;
+  }
+
+  requestAnimationFrame(render);
+}
+function hex(h){ const n=parseInt(h.slice(1),16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+function hexA(h,a){ const c=hex(h); return `rgba(${c[0]},${c[1]},${c[2]},${a})`; }
+function rgbHex(c){ return '#'+[c[0],c[1],c[2]].map(v=>('0'+(v|0).toString(16)).slice(-2)).join(''); }
+
+/* ===================== player / UI ===================== */
+const acard=document.getElementById('acard');
+const dotsEl=document.getElementById('dots');
+const stepNum=document.getElementById('stepNum');
+const stepName=document.getElementById('stepName');
+const playBtn=document.getElementById('play');
+const dirLabel=d=> d==='dispatch'?'Dispatch ▶': d==='returnf'?'◀ Findings return': d==='dialogue'?'⇄ Dialogue / recovery':'';
+
 dotsEl.innerHTML = STAGES.map((s,i)=>`<div class="dot" data-i="${i}"><span class="dn">${s.n}</span><span class="dl">${s.name}</span></div>`).join('');
 dotsEl.querySelectorAll('.dot').forEach(d=> d.addEventListener('click',()=>{ goTo(+d.dataset.i); if(playing) schedule(); }));
 
-/* ---------------- render active step ---------------- */
 function renderActive(i){
-  const s = STAGES[i];
+  const s=STAGES[i];
   const dir = s.dir ? `<span class="dir ${s.dir}">${dirLabel(s.dir)}</span>` : '';
   const feeder = (s.feeder===null)
     ? `<div class="lane f idle"><div class="lt">◆ Feeders</div><p>Idle — Master is working.</p></div>`
@@ -426,12 +548,8 @@ function renderActive(i){
       `</div>`;
   const gates = (i===4)
     ? `<div class="gates"><span class="glab">Gates</span>`+
-      ["A","B","C","D","E","F"].map((g,k)=>`<span class="gch ${(g==='B'||g==='F')?'crit':''}" style="animation-delay:${(0.15+k*0.22).toFixed(2)}s">${g}</span>`).join('')+
-      `</div>` : ``;
-
-  acard.classList.remove('flash');
-  void acard.offsetWidth;            /* retrigger entrance animation */
-  acard.classList.add('flash');
+      ["A","B","C","D","E","F"].map((g,k)=>`<span class="gch ${(g==='B'||g==='F')?'crit':''}" style="animation-delay:${(0.15+k*0.22).toFixed(2)}s">${g}</span>`).join('')+`</div>` : ``;
+  acard.classList.remove('flash'); void acard.offsetWidth; acard.classList.add('flash');
   acard.innerHTML =
     `<div class="ac-head"><span class="badge">${s.n}</span><span class="ac-name">${s.name}</span><span class="ac-tag">${s.tag}</span>${dir}</div>`+
     `<p class="ac-lead">${s.lead}</p>`+
@@ -440,43 +558,27 @@ function renderActive(i){
     `<ul class="pts">${s.points.map(p=>`<li>${p}</li>`).join('')}</ul>`+
     `<div class="out">${s.out}</div>`;
 }
-
-/* ---------------- update scene ---------------- */
-function updateScene(i){
-  ALL_NODES.forEach(id=> document.getElementById(id).classList.remove('active'));
-  SCENE[i].nodes.forEach(k=> document.getElementById(NODE[k]).classList.add('active'));
-  ALL_TOKS.forEach(id=> document.getElementById(id).classList.remove('show'));
-  SCENE[i].toks.forEach(id=> document.getElementById(id).classList.add('show'));
-}
-
-/* ---------------- update dots + label ---------------- */
 function updateChrome(i){
-  dotsEl.querySelectorAll('.dot').forEach((d,k)=>{
-    d.classList.toggle('active', k===i);
-    d.classList.toggle('done', k<i);
-  });
-  stepNum.textContent = i+1;
-  stepName.textContent = STAGES[i].name;
+  dotsEl.querySelectorAll('.dot').forEach((d,k)=>{ d.classList.toggle('active',k===i); d.classList.toggle('done',k<i); });
+  stepNum.textContent=i+1; stepName.textContent=STAGES[i].name;
 }
 
-/* ---------------- player ---------------- */
 let cur=0, playing=false, speed=1, timer=null;
-const STEP_MS = 4600;
-
-function goTo(i){ cur = (i+STAGES.length)%STAGES.length; renderActive(cur); updateScene(cur); updateChrome(cur); }
+const STEP_MS=4800;
+function goTo(i){ cur=(i+STAGES.length)%STAGES.length; renderActive(cur); updateChrome(cur); }
 function clearTimer(){ if(timer){ clearTimeout(timer); timer=null; } }
 function schedule(){ clearTimer(); if(playing){ timer=setTimeout(()=>{ goTo(cur+1); schedule(); }, STEP_MS/speed); } }
-function setIcon(){ playBtn.textContent = playing ? '⏸' : '▶'; }
-function play(){ playing=true; document.body.classList.remove('paused'); try{scene.unpauseAnimations();}catch(e){} setIcon(); schedule(); }
-function pause(){ playing=false; document.body.classList.add('paused'); try{scene.pauseAnimations();}catch(e){} clearTimer(); setIcon(); }
+function setIcon(){ playBtn.textContent = playing?'⏸':'▶'; }
+function play(){ playing=true; document.body.classList.remove('paused'); setIcon(); schedule(); }
+function pause(){ playing=false; document.body.classList.add('paused'); clearTimer(); setIcon(); }
 
-playBtn.addEventListener('click',()=> playing ? pause() : play());
+playBtn.addEventListener('click',()=> playing?pause():play());
 document.getElementById('next').addEventListener('click',()=>{ goTo(cur+1); if(playing) schedule(); });
 document.getElementById('prev').addEventListener('click',()=>{ goTo(cur-1); if(playing) schedule(); });
 document.getElementById('restart').addEventListener('click',()=>{ goTo(0); if(playing) schedule(); });
 document.getElementById('speed').querySelectorAll('button').forEach(b=> b.addEventListener('click',()=>{
-  speed = parseFloat(b.dataset.spd);
-  document.getElementById('speed').querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
+  speed=parseFloat(b.dataset.spd);
+  document.getElementById('speed').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
   if(playing) schedule();
 }));
 document.addEventListener('keydown',e=>{
@@ -485,25 +587,11 @@ document.addEventListener('keydown',e=>{
   else if(e.key===' '){ e.preventDefault(); playing?pause():play(); }
 });
 
-/* init — autoplay */
+/* init */
+resize();
 goTo(0);
 play();
+requestAnimationFrame(render);
 </script>
 </body>
-=======
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="refresh" content="0; url=file:///D:/OneDrive/Claude/Code%20-%20Polaris/site/index.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Opening Claude Link...</title>
-  </head>
-  <body>
-    <h2>Opening Claude Link...</h2>
-    <p>You are being redirected to the Claude page.</p>
-    <p>
-      If the page does not open automatically,
-      <a href="file:///D:/OneDrive/Claude/Code%20-%20Polaris/site/index.html">click here</a>.
-    </p>
-  </body>
->>>>>>> 42d72b45821abb772c91db90b83c87f2da1be357
 </html>
